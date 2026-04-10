@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BriefingType {
+  MORNING
+  CLOSE
+}
+
+enum SourceType {
+  OFFICIAL
+  PUBLIC_NEWS
+  PUBLIC_DATA
+  PREMIUM
+  MANUAL
+  ESTIMATED
+  DEMO
+}
+
+enum ConfidenceLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum CommodityGroup {
+  ENERGY
+  METALS
+  AGRICULTURE
+  BULKS
+  CHEMICALS
+  FERTILIZERS
+}
+
+enum FreightMarket {
+  TANKER
+  DRY_BULK
+  CONTAINER
+  LPG
+  LNG
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  name                  String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  preferences           UserPreferences?
+  watchlists            Watchlist[]
+  reportTemplates       ReportTemplate[]
+  alertRules            AlertRule[]
+  notifications         Notification[]
+  sourcePriorityProfiles SourcePriorityProfile[]
+  briefings             Briefing[]
+}
+
+model UserPreferences {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  theme              String   @default("system")
+  regions            String[]
+  detailLevel        String   @default("standard")
+  sourceStrategy     String   @default("free-first")
+  morningBriefHour   Int      @default(7)
+  closeBriefHour     Int      @default(18)
+  enabledCommodities String[]
+  enabledFreight     String[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Commodity {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  name            String
+  group           CommodityGroup
+  unit            String
+  isActive        Boolean         @default(true)
+  watchlists      Watchlist[]
+  articles        Article[]
+}
+
+model VesselClass {
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  name         String
+  market       FreightMarket
+  routeGroup   String
+  freightItems FreightIndex[]
+  watchlists   Watchlist[]
+}
+
+model FreightIndex {
+  id               String          @id @default(cuid())
+  vesselClassId    String
+  label            String
+  routeCode        String?
+  value            Float
+  dayChange        Float?
+  weekChange       Float?
+  interpretation   String
+  asOf             DateTime
+  sourceId         String
+  sourceQuality    ConfidenceLevel
+  vesselClass      VesselClass     @relation(fields: [vesselClassId], references: [id], onDelete: Cascade)
+  source           Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+}
+
+model Source {
+  id             String          @id @default(cuid())
+  slug           String          @unique
+  name           String
+  type           SourceType
+  baseUrl        String?
+  isEnabled      Boolean         @default(true)
+  trustScore     Int             @default(70)
+  costRank       Int             @default(1)
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  articles       Article[]
+  freightIndexes FreightIndex[]
+  briefings      Briefing[]
+  events         Event[]
+}
+
+model Article {
+  id               String          @id @default(cuid())
+  title            String
+  slug             String          @unique
+  url              String
+  publishedAt      DateTime
+  ingestedAt       DateTime        @default(now())
+  summary          String
+  excerpt          String?
+  commodityId      String?
+  sourceId         String
+  tags             String[]
+  sourceQuality    ConfidenceLevel
+  sourceType       SourceType
+  contradictionTag String?
+  source           Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  commodity        Commodity?      @relation(fields: [commodityId], references: [id], onDelete: SetNull)
+}
+
+model Briefing {
+  id              String          @id @default(cuid())
+  userId          String
+  type            BriefingType
+  title           String
+  briefingDate    DateTime
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  sourceId        String?
+  summary         String
+  riskLevel       String
+  templateName    String?
+  metadata        Json
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source          Source?         @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  sections        BriefingSection[]
+}
+
+model BriefingSection {
+  id            String    @id @default(cuid())
+  briefingId    String
+  title         String
+  order         Int
+  sectionType   String
+  body          String
+  bullets       String[]
+  sources       String[]
+  tags          String[]
+  updatedAt     DateTime  @default(now())
+  briefing      Briefing  @relation(fields: [briefingId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id              String          @id @default(cuid())
+  title           String
+  slug            String          @unique
+  startsAt        DateTime
+  endsAt          DateTime?
+  location        String?
+  region          String?
+  category        String
+  relevanceScore  Float
+  whyItMatters    String
+  sourceId        String
+  sourceType      SourceType
+  sourceUrl       String
+  addToCalendarUrl String?
+  isBookmarked    Boolean         @default(false)
+  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+}
+
+model Watchlist {
+  id            String       @id @default(cuid())
+  userId        String
+  name          String
+  commodityId   String?
+  vesselClassId String?
+  region        String?
+  notes         String?
+  createdAt     DateTime     @default(now())
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commodity     Commodity?   @relation(fields: [commodityId], references: [id], onDelete: SetNull)
+  vesselClass   VesselClass? @relation(fields: [vesselClassId], references: [id], onDelete: SetNull)
+}
+
+model ReportTemplate {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String
+  detailLevel    String
+  commoditySlugs String[]
+  freightSlugs   String[]
+  regions        String[]
+  sourceMode     String
+  sectionOrder   String[]
+  pinnedMetrics  String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AlertRule {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  ruleType   String
+  threshold  Float?
+  channel    String
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SourcePriorityProfile {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  officialBoost Int      @default(100)
+  publicBoost   Int      @default(80)
+  premiumBoost  Int      @default(60)
+  manualBoost   Int      @default(50)
+  estimatedBoost Int     @default(30)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
