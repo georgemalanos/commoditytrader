@@ -16,6 +16,7 @@ export default async function SourcesPage() {
     >
       <div className="grid gap-4">
         {sourceCatalog.map((source) => {
+          const sourceUrl = "url" in source ? source.url : undefined;
           const badge = credibilityBadge(source);
           const freshness = scoreFreshness(source.updatedAt);
 
@@ -35,8 +36,8 @@ export default async function SourcesPage() {
               </div>
               <div className="mt-4 flex items-center justify-between text-sm text-fog">
                 <span>Updated {new Date(source.updatedAt).toLocaleString()}</span>
-                <Link href={source.url ?? "#"} className="text-cyan transition hover:text-paper">
-                  {source.url ? "Open source" : "No external link"}
+                <Link href={sourceUrl ?? "#"} className="text-cyan transition hover:text-paper">
+                  {sourceUrl ? "Open source" : "No external link"}
                 </Link>
               </div>
             </Panel>

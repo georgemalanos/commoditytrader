@@ -117,12 +117,13 @@ export default async function DashboardPage() {
           <h3 className="mt-2 text-xl font-semibold">Trust and freshness by connector</h3>
           <div className="mt-5 space-y-3">
             {sourceCatalog.map((source) => {
+              const sourceUrl = "url" in source ? source.url : undefined;
               const sourceLabel = {
                 name: source.name,
                 type: source.type,
                 updatedAt: source.updatedAt,
                 confidence: source.confidence,
-                url: source.url,
+                url: sourceUrl,
                 note: source.note
               } as const;
               const credibility = credibilityBadge(sourceLabel);
