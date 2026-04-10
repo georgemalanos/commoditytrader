@@ -1,0 +1,31 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ink text-paper antialiased;
+}
+
+a {
+  @apply no-underline;
+}
+
+button,
+input,
+select {
+  @apply outline-none;
+}
+
+::selection {
+  background: rgba(156, 203, 79, 0.28);
+}
