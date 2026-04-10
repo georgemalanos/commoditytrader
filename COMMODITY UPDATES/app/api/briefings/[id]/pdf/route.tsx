@@ -10,8 +10,9 @@ export async function GET(
   const { id } = await context.params;
   const briefing = id.includes("close") ? closeBriefing : morningBriefing;
   const pdf = await renderToBuffer(<BriefingPdf briefing={briefing} />);
+  const body = Uint8Array.from(pdf);
 
-  return new NextResponse(pdf, {
+  return new NextResponse(body, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${briefing.id}.pdf"`
